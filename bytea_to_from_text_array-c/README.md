@@ -26,3 +26,28 @@ INSERT INTO dst_tbl
 SELECT * FROM src_tbl;  
 
 SELECT * FROM dst_tbl;  
+
+--
+
+DROP FUNCTION bytea_to_text_array(bytea) CASCADE;  
+CREATE FUNCTION bytea_to_text_array(bytea) RETURNS text[] AS $$ SELECT string_to_array(pg_catalog.encode($1, 'escape'), ',') $$ LANGUAGE SQL;  
+
+DROP FUNCTION text_array_to_bytea(text[]) CASCADE;  
+CREATE FUNCTION text_array_to_bytea(text[]) RETURNS bytea AS $$ SELECT pg_catalog.decode(array_to_string($1, ','), 'escape') $$ LANGUAGE SQL;  
+
+DROP CAST (bytea AS text[]);  
+CREATE CAST (bytea AS text[]) WITH FUNCTION bytea_to_text_array(bytea) AS ASSIGNMENT;  
+
+DROP CAST (text[] AS bytea);  
+CREATE CAST (text[] AS bytea) WITH FUNCTION text_array_to_bytea(text[]) AS ASSIGNMENT;  
+
+DROP EXTERNAL TABLE parquet_tbl_w;  
+CREATE WRITABLE EXTERNAL TABLE parquet_tbl_w (col1 bytea) LOCATION ('gphdfs://172.16.210.139/tmp/parquet_files') FORMAT 'PARQUET';  
+
+INSERT INTO parquet_tbl_w;  
+SELECT ARRAY[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]::text[];  
+
+DROP EXTERNAL TABLE parquet_tbl_r;  
+CREATE EXTERNAL TABLE parquet_tbl_r (col1 bytea) LOCATION ('gphdfs://172.16.210.139/tmp/parquet_files') FORMAT 'PARQUET';  
+
+SELECT col1::text[] FROM parquet_tbl_r;  
